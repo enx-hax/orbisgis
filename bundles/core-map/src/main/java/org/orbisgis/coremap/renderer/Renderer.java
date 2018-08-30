@@ -49,19 +49,24 @@ import java.util.List;
 import java.util.Set;
 import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.SpatialResultSetMetaData;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.orbisgis.commons.progress.NullProgressMonitor;
 import org.orbisgis.commons.progress.ProgressMonitor;
 import org.orbisgis.corejdbc.ReadRowSet;
 import org.orbisgis.coremap.layerModel.ILayer;
 import org.orbisgis.coremap.layerModel.LayerException;
 import org.orbisgis.coremap.map.MapTransform;
+import org.orbisgis.coremap.renderer.se.AreaSymbolizer;
 import org.orbisgis.coremap.renderer.se.Rule;
 import org.orbisgis.coremap.renderer.se.Style;
 import org.orbisgis.coremap.renderer.se.Symbolizer;
 import org.orbisgis.coremap.renderer.se.VectorSymbolizer;
+import org.orbisgis.coremap.renderer.se.fill.SolidFill;
 import org.orbisgis.coremap.renderer.se.parameter.ParameterException;
+import org.orbisgis.coremap.renderer.se.stroke.PenStroke;
 import org.orbisgis.coremap.renderer.se.visitors.FeaturesVisitor;
 import org.orbisgis.coremap.stream.GeoStream;
+import org.orbisgis.coremap.ui.editors.map.tool.Rectangle2DDouble;
 import org.slf4j.*;
 import org.xnap.commons.i18n.I18n;
 import org.xnap.commons.i18n.I18nFactory;
@@ -75,7 +80,6 @@ import org.xnap.commons.i18n.I18nFactory;
  */
 public abstract class Renderer {
 
-        static final int BATCH_SIZE = 1000;
         private static final Logger LOGGER = LoggerFactory.getLogger(Renderer.class);
         private static final I18n I18N = I18nFactory.getI18n(Renderer.class);
         private ResultSetProviderFactory rsProvider = null;
@@ -88,15 +92,17 @@ public abstract class Renderer {
             this.rsProvider = rsProvider;
         }
 
-    /**
-         * This method shall returns a graphics2D for each symbolizers in the list.
-         * This is useful to make the diff bw pdf purpose and image purpose
-         * Is called just before a new layer is drawn
-         */
-        //public abstract HashMap<Symbolizer, Graphics2D> getGraphics2D(ArrayList<Symbolizer> symbs,
-        //        Graphics2D g2, MapTransform mt);
+        /**
+        * This method shall returns a graphics2D for each symbolizers in the list.
+        * This is useful to make the diff bw pdf purpose and image purpose Is
+        * called just before a new layer is drawn
+        *
+        * @param symbs
+        * @param g2
+        * @param mt
+        */
         protected abstract void initGraphics2D(List<Symbolizer> symbs, Graphics2D g2,
-                MapTransform mt);
+            MapTransform mt);
 
         /**
          * Gets the {@code Graphics2D} instance that is associated to the {@code
@@ -114,42 +120,20 @@ public abstract class Renderer {
          */
         protected abstract void disposeLayer(Graphics2D g2);
 
-        /**
-         * Called before each feature
-         * @param id index of the feature
-         * @param rs Result set
-         */
-        protected abstract void beginFeature(long id, ResultSet rs);
-
-        /**
-         * Called after each feature
-         * @param id index of the feature
-         * @param rs Result set
-         */
-        protected abstract void endFeature(long id, ResultSet rs);
-
-        /**
-         * Called before each layer
-         * @param name the name of the layer
-         */
-        protected abstract void beginLayer(String name);
-
-        /**
-         * Called after each layer
-         * @param name the name of the layer
-         */
-        protected abstract void endLayer(String name);
+            
 
         /**
          * Draws the content of the Vector Layer
          *
          * @param g2
          *            Object to draw to
+         * @param mt
          * @param layer
          *            Source of information
          * @param pm
          *            Progress monitor to report the status of the drawing
          * @return the number of rendered objects
+         * @throws java.sql.SQLException
          */
         public int drawVector(Graphics2D g2, MapTransform mt, ILayer layer,
                 ProgressMonitor pm) throws SQLException {
@@ -162,9 +146,42 @@ public abstract class Renderer {
                 return layerCount;
         }        
 
+        /**
+         * 
+         * @param style
+         * @param g2
+         * @param mt
+         * @param layer
+         * @param pm
+         * @param extent
+         * @return
+         * @throws SQLException 
+         */
         private int drawStyle(Style style, Graphics2D g2,MapTransform mt, ILayer layer,
                               ProgressMonitor pm, Envelope extent) throws SQLException {
-            int layerCount = 0;
+            int layerCount = 0;            
+            //If the extend of the datasource is lower that a pixel then draw a 
+            //single polygon to display a pixel
+            Rectangle2DDouble layerEnv = mt.toPixel(layer.getEnvelope());
+            if ((layerEnv.getHeight() <= mt.getMaxPixelDisplay())
+                    && (layerEnv.getWidth() <= mt.getMaxPixelDisplay())) {
+                AreaSymbolizer areaSymbolizer = new AreaSymbolizer();
+                areaSymbolizer.setFill(new SolidFill(Color.BLACK));
+                PenStroke ps = new PenStroke();
+                ps.setFill(new SolidFill(Color.BLACK));
+                areaSymbolizer.setStroke(ps);
+                GeometryFactory gf = new GeometryFactory();
+                try {
+                    LinkedList<Symbolizer> symbs = new LinkedList<Symbolizer>();
+                    symbs.add(areaSymbolizer);
+                    initGraphics2D(symbs, g2, mt);
+                    drawFeature(areaSymbolizer, gf.toGeometry(layer.getEnvelope()), null, 0, extent, false, mt);
+                    disposeLayer(g2);
+                } catch (ParameterException | IOException ex) {
+                    printEx(ex, layer, g2);
+                }
+            }
+            else{
             LinkedList<Symbolizer> symbs = new LinkedList<Symbolizer>();
             ResultSetProviderFactory layerDataFactory = rsProvider;
             if(layerDataFactory == null) {
@@ -188,8 +205,7 @@ public abstract class Renderer {
                 // Get a graphics for each symbolizer
                 initGraphics2D(symbs, g2, mt);
                 ProgressMonitor rulesProgress = pm.startTask(rList.size());
-                for (Rule r : rList) {                    
-                    beginLayer(r.getName());
+                for (Rule r : rList) { 
                     FeaturesVisitor fv  = new FeaturesVisitor();
                     fv.visitSymbolizerNode(r);
                     Set<String> fields = fv.getResult();
@@ -230,37 +246,44 @@ public abstract class Renderer {
                                     }
                                     //End workaround
                                     boolean selected = selectedRows.contains(row);
-
-                                    beginFeature(row, rs);
-
                                     List<Symbolizer> sl = r.getCompositeSymbolizer().getSymbolizerList();
                                     for (Symbolizer s : sl) {
-                                        boolean res = drawFeature(s, theGeom, rs, row,
-                                                extent, selected, mt);
+                                         drawFeature(s, theGeom, rs, row,extent, selected, mt);
                                     }
-                                    endFeature(row, rs);
                                 }
                                 rowSetProgress.endTask();
                             }
-                            endLayer(r.getName());
                         }
                     } catch (SQLException ex) {
                         if(!rulesProgress.isCancelled()) {
                             printEx(ex, layer, g2);
                         }
-                    }
+                    
+                }
                     rulesProgress.endTask();
                 }
                 disposeLayer(g2);
-            } catch (ParameterException ex) {
+            } catch (ParameterException | IOException ex) {
                 printEx(ex, layer, g2);
-            } catch (IOException ex) {
-                printEx(ex, layer, g2);
+            }
             }
             return layerCount;
         }
 
-        private boolean drawFeature(Symbolizer s, Geometry geom, ResultSet rs,
+        /**
+         * Draw the feature
+         * @param s
+         * @param geom
+         * @param rs
+         * @param rowIdentifier
+         * @param extent
+         * @param selected
+         * @param mt
+         * @throws ParameterException
+         * @throws IOException
+         * @throws SQLException 
+         */
+        private void drawFeature(Symbolizer s, Geometry geom, ResultSet rs,
                         long rowIdentifier, Envelope extent, boolean selected,
                         MapTransform mt) throws ParameterException,
                         IOException, SQLException {
@@ -281,9 +304,6 @@ public abstract class Renderer {
                         g2S = getGraphics2D(s);
                         s.draw(g2S, rs, rowIdentifier, selected, mt, theGeom);
                         releaseGraphics2D(g2S);
-                        return true;
-                }else {
-                        return false;
                 }
         }
 

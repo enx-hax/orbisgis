@@ -120,20 +120,4 @@ public class PdfRenderer extends Renderer {
     @Override
     protected void releaseGraphics2D(Graphics2D g2) {
     }
-
-    @Override
-    public void beginLayer(String name) {
-    }
-
-    @Override
-    public void endLayer(String name) {
-    }
-
-    @Override
-    protected void beginFeature(long id, ResultSet rs) {
-    }
-
-    @Override
-    protected void endFeature(long id, ResultSet rs) {
-    }
 }

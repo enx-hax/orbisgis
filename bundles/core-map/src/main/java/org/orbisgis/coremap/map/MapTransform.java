@@ -100,6 +100,7 @@ public class MapTransform implements PointTransformation {
                     this.dpi = DEFAULT_DPI;
                 }                
                 updateRenderingHints();
+                computeMaxPixelDisplay();
         }
 
         /**
@@ -155,6 +156,7 @@ public class MapTransform implements PointTransformation {
          */
         public void setDpi(double dpi) {
                 this.dpi = dpi;
+                computeMaxPixelDisplay();
         }
 
         /**
@@ -438,8 +440,7 @@ public class MapTransform implements PointTransformation {
         public ShapeWriter getShapeWriter() {
                 if (converter == null) {
                         converter = new ShapeWriter(this);
-                        converter.setRemoveDuplicatePoints(true);
-                        MAXPIXEL_DISPLAY = 0.5 / (25.4 / getDpi());
+                        converter.setRemoveDuplicatePoints(true);                        
                 }
                 /**
                 * Choose a fairly conservative decimation distance to avoid visual artifacts
@@ -448,6 +449,14 @@ public class MapTransform implements PointTransformation {
                 //Double dec = adjustedExtent == null ? 0 : MAXPIXEL_DISPLAY / getScaleDenominator();
                 //converter.setDecimation(dec);
                 return converter;
+        }
+        
+        /**
+         * Compute the pixel size
+         * @return 
+         */
+        private void computeMaxPixelDisplay(){
+             MAXPIXEL_DISPLAY = 0.5 / (25.4 / getDpi());
         }
 
         /**
@@ -488,5 +497,13 @@ public class MapTransform implements PointTransformation {
         screenHints.put(RenderingHints.KEY_ANTIALIASING, Boolean.valueOf(System.getProperty("map.editor.renderer.value_antialias_on"))
                 ? RenderingHints.VALUE_ANTIALIAS_ON
                 : RenderingHints.VALUE_ANTIALIAS_OFF);
+    }
+
+    /**
+     * Return the maximum pixel size to display
+     * @return 
+     */
+    public double getMaxPixelDisplay() {
+        return MAXPIXEL_DISPLAY;
     }
 }

@@ -80,4 +80,5 @@ public class Rectangle2DDouble extends Rectangle2D.Double {
             new Coordinate(getMinX(), getMinY()),});
         return gf.createPolygon(ret, new LinearRing[]{});
     }
+
 }

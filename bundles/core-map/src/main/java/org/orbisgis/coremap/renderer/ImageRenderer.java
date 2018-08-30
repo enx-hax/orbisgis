@@ -84,6 +84,7 @@ public class ImageRenderer extends Renderer {
 
     /**
      * Apply drawn features of last layer to input graphic
+     * @param g2 Graphics2D
      */
     public void updateImage(Graphics2D g2) {
         for (BufferedImage img : new ArrayList<>(imgSymbs)) {
@@ -99,25 +100,4 @@ public class ImageRenderer extends Renderer {
         graphics.clear();
         updateImage(g2);
     }
-
-    @Override
-    protected void beginLayer(String name) {
-        // nothing to do
-    }
-
-    @Override
-    protected void endLayer(String name) {
-        // nothing to do
-    }
-
-    @Override
-    protected void beginFeature(long id, ResultSet rs) {
-    }
-
-    @Override
-    protected void endFeature(long id, ResultSet rs) {
-    }
-    
-    
-
 }
