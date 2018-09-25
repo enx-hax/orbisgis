@@ -54,6 +54,7 @@ import org.orbisgis.coremap.renderer.se.common.Uom;
 import org.orbisgis.coremap.renderer.se.parameter.ParameterException;
 import org.orbisgis.coremap.renderer.se.parameter.geometry.GeometryAttribute;
 import org.h2gis.utilities.SpatialResultSet;
+import org.orbisgis.coremap.renderer.se.common.ShapeHelper;
 
 /**
  * This class contains the common elements shared by <code>PointSymbolizer</code>,<code>LineSymbolizer</code>
@@ -183,6 +184,9 @@ public abstract class VectorSymbolizer extends Symbolizer implements UomNode {
          *
          * @param rs the data source
          * @param fid the feature id
+     * @param mt
+     * @param the_geom
+     * @return 
          * @throws ParameterException
          * @throws IOException
          * @throws SQLException
@@ -190,8 +194,8 @@ public abstract class VectorSymbolizer extends Symbolizer implements UomNode {
         public List<Shape> getLines(ResultSet rs, long fid,
                 MapTransform mt, Geometry the_geom) throws ParameterException, IOException, SQLException {
                 Geometry geom = getGeometry(rs, fid, the_geom);
-                LinkedList<Shape> shapes = new LinkedList<Shape>();
-                LinkedList<Geometry> geom2Process = new LinkedList<Geometry>();
+                LinkedList<Shape> shapes = new LinkedList<>();
+                LinkedList<Geometry> geom2Process = new LinkedList<>();
                 geom2Process.add(geom);
                 AffineTransform at = null;
                 while (!geom2Process.isEmpty()) {
@@ -278,6 +282,7 @@ public abstract class VectorSymbolizer extends Symbolizer implements UomNode {
          * @param rs
          * @param fid
          * @param mt
+         * @param theGeom
          * @return
          * @throws ParameterException
          * @throws IOException
@@ -310,7 +315,7 @@ public abstract class VectorSymbolizer extends Symbolizer implements UomNode {
                 MapTransform mt, Geometry theGeom) throws ParameterException, IOException, SQLException {
 
                 Geometry geom = getGeometry(rs, fid, theGeom);
-                //geom = ShapeHelper.clipToExtent(geom, mt.getAdjustedExtent());
+                geom = ShapeHelper.clipToExtent(geom, mt.getAdjustedExtent());
 
                 LinkedList<Point2D> points = new LinkedList<Point2D>();
 

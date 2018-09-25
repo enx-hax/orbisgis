@@ -165,8 +165,10 @@ public final class LineSymbolizer extends VectorSymbolizer implements StrokeNode
          * @param g2
          * @param rs
          * @param fid
+         * @param the_geom
          * @throws ParameterException
          * @throws IOException
+         * @throws java.sql.SQLException
          * @todo make sure the geom is a line or an area; implement p_offset
          */
         @Override

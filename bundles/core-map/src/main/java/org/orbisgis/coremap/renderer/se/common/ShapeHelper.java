@@ -1313,6 +1313,12 @@ public final class ShapeHelper {
         }
     }
 
+    /**
+     * Keep the geometries that intersect the extent
+     * @param theGeom
+     * @param extent
+     * @return 
+     */
     public static Geometry clipToExtent(Geometry theGeom, Envelope extent) {
         GeometryFactory geometryFactory = new GeometryFactory();
 

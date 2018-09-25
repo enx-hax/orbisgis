@@ -55,6 +55,7 @@ public interface ReversibleRowSet extends ReadRowSet {
 
     /**
      * Remove registered listener
+     * @param table
      * @param listener Listener instance to remove
      */
     void removeTableEditListener(String table, TableEditListener listener);

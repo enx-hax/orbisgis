@@ -51,7 +51,6 @@ import net.opengis.se._2_0.core.ExtensionParameterType;
 import net.opengis.se._2_0.core.ExtensionType;
 import net.opengis.se._2_0.core.ObjectFactory;
 import net.opengis.se._2_0.core.PointSymbolizerType;
-import org.slf4j.*;
 
 
 

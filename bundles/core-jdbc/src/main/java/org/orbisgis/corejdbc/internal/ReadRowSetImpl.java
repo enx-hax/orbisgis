@@ -516,6 +516,7 @@ public class ReadRowSetImpl extends AbstractRowSet implements JdbcRowSet, DataSo
      * Reestablish connection if necessary
      * @throws SQLException
      */
+    @Override
     public Connection getConnection() throws SQLException {
         Connection connection = dataSource.getConnection();
         if(getQueryTimeout() > 0) {
@@ -1798,7 +1799,7 @@ public class ReadRowSetImpl extends AbstractRowSet implements JdbcRowSet, DataSo
             try (Connection connection = dataSource.getConnection()) {
                 boolean isH2 = JDBCUtilities.isH2DataBase(connection.getMetaData());
                 try (
-                        PreparedStatement st = connection.prepareStatement(command, isH2 ? ResultSet
+                    PreparedStatement st = connection.prepareStatement(command, isH2 ? ResultSet
                                 .TYPE_SCROLL_SENSITIVE : ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
                     cancelStatement = st;
                     st.setFetchSize(fetchSize);
